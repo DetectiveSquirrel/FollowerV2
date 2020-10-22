@@ -666,33 +666,10 @@ namespace FollowerV2
 
                         string fullCommand = $"/hideout {_followerState.HideoutCharacterName}";
 
-                        List<Keys> keys = new List<Keys>() { Keys.Enter, Keys.OemQuestion, Keys.H, Keys.I, Keys.D, Keys.E, Keys.O, Keys.U, Keys.T, Keys.Space };
-                        List<Keys> nameAsKeys = StringToKeysList(_followerState.HideoutCharacterName);
-
-                        if (nameAsKeys == null) return RunStatus.Success;
-
-                        keys.AddRange(nameAsKeys);
-
-                        foreach (Keys key in keys)
-                        {
-                            pressKey(key);
-                        }
-
-                        PoeChatElement chatBoxRoot = GameController.IngameState.IngameUi.ChatBoxRoot;
-                        if (chatBoxRoot?.Children != null && chatBoxRoot.Children.Any())
-                        {
-                            // If ChatBoxRoot is present we can check whether the text is correct
-                            bool textPresent = chatBoxRoot.Children
-                                .Where(e => !String.IsNullOrEmpty(e.Text))
-                                .Any(e => e.Text == fullCommand);
-
-                            pressKey(textPresent ? Keys.Enter : Keys.Escape);
-                        }
-                        else
-                        {
-                            // ChatBoxRoot is not present (no offset etc.) so just press enter
-                            pressKey(Keys.Enter);
-                        }
+                        SendKeys.SendWait("{ENTER}");
+                        ImGui.SetClipboardText(fullCommand);
+                        SendKeys.SendWait("^v");
+                        SendKeys.SendWait("{ENTER}");
 
                         return RunStatus.Success;
                     })
