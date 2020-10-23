@@ -25,6 +25,7 @@ namespace FollowerV2
     {
         private Coroutine _nearbyPlayersUpdateCoroutine;
         private Coroutine _followerCoroutine;
+        private Coroutine _partyInfoCoroutine;
 
         public Composite Tree { get; set; }
 
@@ -40,6 +41,13 @@ namespace FollowerV2
 
         private readonly DateTime _emptyDateTime = new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+
+        // Party Info added
+        // TODO Remove when finished
+        public static Follower MainPlugin { get; set; }
+        public List<Entity> PlayerEntities { get; set; } = new List<Entity>();
+        public static List<PartyElementWindow> PlayerInPartyDraw { get; set; } = new List<PartyElementWindow>();
+
         public override bool Initialise()
         {
             Tree = CreateTree();
@@ -54,6 +62,8 @@ namespace FollowerV2
             // Fire all coroutines
             Core.ParallelRunner.Run(_nearbyPlayersUpdateCoroutine);
             Core.ParallelRunner.Run(_followerCoroutine);
+
+            MainPlugin = this;
 
             GameController.LeftPanel.WantUse(() => true);
 
@@ -95,6 +105,13 @@ namespace FollowerV2
         public override void Render()
         {
             if (!Settings.Enable.Value || !GameController.InGame) return;
+
+
+
+            //Party drawing
+            // TODO: change hard coding of party element index to setting slider
+            PlayerInPartyDraw = PartyElements.GetPlayerInfoElementList(PlayerEntities, 20);
+
 
             // Debug related
             if (Settings.DebugShowRadius.Value)
@@ -503,20 +520,25 @@ namespace FollowerV2
                             _followerState.SavedCurrentAreaHash = GameController.IngameState.Data.CurrentAreaHash;
                         }
 
-                        Entity entranceEntity = GetEntitiesByEntityTypeAndSortByDistance(EntityType.AreaTransition, GameController.Player).FirstOrDefault();
-                        if (entranceEntity == null) return TreeRoutine.TreeSharp.RunStatus.Failure;
 
-                        // If entrance entity is too far away stop the whole logic
-                        if (entranceEntity.Distance(GameController.Player) > 70)
+
+                        foreach (var partyElementWindow in PlayerInPartyDraw)
                         {
-                            return TreeRoutine.TreeSharp.RunStatus.Failure;
+
+                            if (partyElementWindow.PlayerName == Settings.FollowerModeSettings.LeaderName.Value)
+                            {
+                                Vector2 windowOffset = GameController.Window.GetWindowRectangle().TopLeft;
+
+                                Vector2 elemCenter = partyElementWindow.TPButton.GetClientRectCache.Center;
+                                Vector2 finalPos = new Vector2(elemCenter.X + windowOffset.X, elemCenter.Y + windowOffset.Y);
+
+                                Mouse.SetCursorPosHuman2(finalPos);
+                                Thread.Sleep(200);
+                                Mouse.LeftClick(10);
+                                Thread.Sleep(200);
+                            }
                         }
 
-                        bool hovered = HoverToEntityAction(entranceEntity);
-
-                        if (!hovered) return TreeRoutine.TreeSharp.RunStatus.Failure;
-
-                        Mouse.LeftClick(10);
                         Thread.Sleep(2000);
 
                         // Wait additionally up to 2 seconds for IsLoading to pop up
@@ -1147,6 +1169,31 @@ namespace FollowerV2
             }
         }
 
+        private IEnumerator PartyInfoUpdates()
+        {
+            LogMsgWithVerboseDebug("Starting PartyInfoUpdates function");
+            while (true)
+            {
+                ICollection<Entity> entities = GetEntities();
+
+                List<string> playerNames = entities
+                    .Where(e => e.Type == EntityType.Player)
+                    .Where(e =>
+                    {
+                        string playerName = e.GetComponent<Player>().PlayerName;
+                        if (playerName == "") return false;
+                        return playerName != GameController.Player.GetComponent<Player>().PlayerName;
+
+                    })
+                    .Select(e => e.GetComponent<Player>().PlayerName)
+                    .ToList();
+
+                Settings.NearbyPlayers.Values = playerNames;
+
+                yield return new WaitTime(1000);
+            }
+        }
+
         private IEnumerator MainServerWork()
         {
             LogMsgWithVerboseDebug($"Starting {nameof(MainServerWork)} function");
@@ -1479,6 +1526,19 @@ namespace FollowerV2
         {
             Finished,
             Working,
+        }
+
+        public override void EntityAdded(Entity entityWrapper)
+        {
+            if (entityWrapper.HasComponent<Player>())
+            {
+                PlayerEntities.Add(entityWrapper);
+            }
+        }
+
+        public override void EntityRemoved(Entity entityWrapper)
+        {
+            PlayerEntities.Remove(entityWrapper);
         }
 
         private void RenderAdditionalFollowerCommandImguiWindow()
