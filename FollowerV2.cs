@@ -109,8 +109,8 @@ namespace FollowerV2
 
 
             //Party drawing
-            // TODO: change hard coding of party element index to setting slider
-            PlayerInPartyDraw = PartyElements.GetPlayerInfoElementList(PlayerEntities, 20);
+            var playerEntities = GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Player];
+            PlayerInPartyDraw = PartyElements.GetPlayerInfoElementList(playerEntities);
 
 
             // Debug related
@@ -1526,19 +1526,6 @@ namespace FollowerV2
         {
             Finished,
             Working,
-        }
-
-        public override void EntityAdded(Entity entityWrapper)
-        {
-            if (entityWrapper.HasComponent<Player>())
-            {
-                PlayerEntities.Add(entityWrapper);
-            }
-        }
-
-        public override void EntityRemoved(Entity entityWrapper)
-        {
-            PlayerEntities.Remove(entityWrapper);
         }
 
         private void RenderAdditionalFollowerCommandImguiWindow()

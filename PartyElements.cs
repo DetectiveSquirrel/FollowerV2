@@ -9,13 +9,13 @@ namespace FollowerV2
 {
     public class PartyElements
     {
-        public List<string> ListOfPlayersInParty( int child)
+        public List<string> ListOfPlayersInParty()
         {
             var playersInParty = new List<string>();
 
             try
             {
-                var baseWindow = Follower.MainPlugin.GameController.IngameState.IngameUi.Children[child];
+                var baseWindow = Follower.MainPlugin.GameController.IngameState.IngameUi.PartyElement;
                 if (baseWindow != null)
                 {
                     var partyList = baseWindow.Children[0]?.Children[0]?.Children;
@@ -35,13 +35,13 @@ namespace FollowerV2
             return playersInParty;
         }
 
-        public static List<PartyElementWindow> GetPlayerInfoElementList(List<Entity> entityList, int child)
+        public static List<PartyElementWindow> GetPlayerInfoElementList(List<Entity> entityList)
         {
             var playersInParty = new List<PartyElementWindow>();
 
             try
             {
-                var baseWindow = Follower.MainPlugin.GameController.IngameState.IngameUi.Children[child];
+                var baseWindow = Follower.MainPlugin.GameController.IngameState.IngameUi.PartyElement;
                 if (baseWindow != null)
                 {
                     var partElementList = baseWindow.Children[0].Children[0].Children;
